@@ -1,0 +1,13 @@
+Cc1n[nH]c2c(F)cc(C(=O)Nc3ccc4c(c3)cc(CN3CCC(c5cccc(OCc6ccc(Cl)cc6F)n5)CC3)n4C[C@@H]3CCO3)cc12 	 12
+Cc1n[nH]c2c(F)cc(C(=O)Nc3ccc4c(c3)nc(CN3CCC(c5cccc(OCc6ccc(Cl)cc6F)n5)CC3)n4C[C@@H]3CCO3)cc12 	 8
+Cc1n[nH]c2ccc(C(=O)Nc3ccc4c(c3)nc(CN3CCC(c5cccc(OCc6ccc(Cl)cc6F)n5)CC3)n4C[C@@H]3CCO3)cc12 	 4
+Cc1n[nH]c2c(C)cc(NC(=O)c3ccc4c(c3)nc(CN3CCC(c5cccc(OCCc6ccc(Cl)cc6F)n5)CC3)n4C[C@@H]3CCO3)cc12 	 4
+Cc1n[nH]c2c(F)cc(C(=O)Nc3ccc4c(c3)nc(CN3CCC(c5cccc(OCCc6ccc(Cl)cc6F)n5)CC3)n4C[C@@H]3CCO3)cc12 	 4
+Cc1n[nH]c2c(C)cc(NC(=O)c3ccc4c(c3)nc(CN3CC=C(c5cccc(OCc6ccc(Cl)cc6)n5)CC3)n4C[C@@H]3CCO3)cc12 	 4
+Cc1n[nH]c2c(C)cc(C(=O)Nc3ccc4c(c3)nc(CN(CCC3CCc5cccc3c5)C[C@@H]3CCO3)n4C[C@@H]3CCO3)cc12 	 4
+CC1(C#Cc2ccc(-c3ccc(-c4c(Cc5ccc(S(N)(=O)=O)cc5)c(CC5CC5)nn4-c4nc(C(=O)O)cs4)cc3)cc2F)CCCC1 	 4
+Cc1n[nH]c2c(F)cc(C(=O)Nc3ccc4c(c3)nc(CN3CCC(c5cccc(Oc6ccc(Cl)cc6F)n5)CC3)n4C[C@@H]3CCO3)cc12 	 4
+Cc1n[nH]c2c(C)cc(C(=O)Nc3ccc4c(c3)C=CC=C(CN3CCC(c5ccc(C(=O)Nc6cc(F)c7[nH]nc(C)c7c6)cc5)CC3)N4C[C@@H]3CCO3)cc12 	 4
+NS(=O)(=O)c1ccc(Cc2c(-c3ccc(CC4CC4)cc3)nn(-c3nc(C(=O)O)cs3)c2Cc2ccc(S(N)(=O)=O)c(F)c2)cc1 	 4
+Cc1n[nH]c2c(C)cc(C(=O)Nc3cnc4nc(CN5CCC(c6cccc(OCc7ccc(Cl)cc7F)n6)CC5)n(CC5CCCC5)c4c3)cc12 	 4
+NS(=O)(=O)c1ccc(Cc2nn(-c3nc(C(=O)O)cs3)c(CC3CC3)c2-c2cccc(-c3ccc(F)c(C#CC4(O)CCCC4)c3)c2)cc1F 	 4
