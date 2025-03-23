@@ -79,6 +79,7 @@ The Streamlit application provides an intuitive GUI for configuring, running, an
    ```bash
    conda activate oam_hgm
    streamlit run app.py
+   If want to tunnel for other people without hosting <!-- ngrok http http://localhost:8501 -->
    ```
 
 2. **Access the web interface** in your browser at `http://localhost:8501`

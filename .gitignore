@@ -2,6 +2,7 @@
 pretrained/c24_augmentationx10_minlen1_maxlen140.h5
 .env
 *.h5
+.streamlit/secrets.toml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

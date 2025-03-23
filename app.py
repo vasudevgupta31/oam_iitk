@@ -258,6 +258,8 @@ def update_logs(message, log_placeholder=None):
     # Also print to console for debugging
     print(log_entry)
 
+if not check_password():
+    st.stop()
 
 # Ensure input_data directory exists
 input_data_dir = ensure_input_data_dir()
@@ -1360,10 +1362,6 @@ else:  # Browse Experiments page
                             except ImportError:
                                 st.error("RDKit is required to display molecular structures. Please install it with `pip install rdkit`.")
 
-            
-                        
-                        
-
 
 # Footer
 st.markdown("<div class='separator'></div>", unsafe_allow_html=True)
@@ -1380,3 +1378,38 @@ with col2:
         """, 
         unsafe_allow_html=True
     )
+
+
+# Style the centered logout button
+st.sidebar.markdown("""
+<style>
+div[data-testid="stButton"][data-baseweb="button"]:has(button:contains("Logout")) {
+    display: flex;
+    justify-content: center;
+}
+div[data-testid="stButton"][data-baseweb="button"]:has(button:contains("Logout")) button {
+    background-color: #f63366;
+    color: white;
+    font-weight: bold;
+    width: auto;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1.5rem;
+    margin-bottom: 1rem;
+    transition: background-color 0.3s;
+}
+div[data-testid="stButton"][data-baseweb="button"]:has(button:contains("Logout")) button:hover {
+    background-color: #d01a4b;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Logout function
+def logout():
+    # Clear the session state completely to avoid "password incorrect" message
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+
+# Create the logout button
+if st.sidebar.button("Logout", key="logout_button", on_click=logout):
+    pass  # The action happens in the on_click function
