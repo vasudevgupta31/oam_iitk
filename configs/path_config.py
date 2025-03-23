@@ -6,7 +6,7 @@ from loguru import logger
 root_path = os.getcwd()
 ini_file_path = 'config.ini'
 config_file = configparser.ConfigParser()
-config_file.read("config.ini")
+config_file.read(ini_file_path)
 
 
 logs_path = os.path.join(root_path, 'logs')

@@ -15,6 +15,7 @@ import json
 import matplotlib.pyplot as plt
 from datetime import datetime
 import numpy as np
+from funcs.stauth import check_password
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -256,86 +257,6 @@ def update_logs(message, log_placeholder=None):
     
     # Also print to console for debugging
     print(log_entry)
-
-
-# Function to get experiment folders
-def get_experiment_folders(base_dir="memory"):
-    if not os.path.exists(base_dir):
-        return []
-
-    experiment_folders = []
-    for folder in os.listdir(base_dir):
-        folder_path = os.path.join(base_dir, folder)
-        if os.path.isdir(folder_path):
-            # Check if this is an experiment folder (should have certain subdirectories)
-            if any([os.path.exists(os.path.join(folder_path, subdir)) for subdir in 
-                   ["models", "generated_samples"]]):
-                experiment_folders.append(folder)
-    
-    return sorted(experiment_folders, reverse=True)  # Latest first
-
-# Function to get experiment metadata
-def get_experiment_metadata(experiment_name, base_dir="output"):
-    metadata = {
-        "name": experiment_name,
-        "created": "Unknown",
-        "status": "Unknown",
-        "model_file": None,
-        "results_file": None,
-        "num_samples": 0
-    }
-
-    exp_dir = os.path.join(base_dir, experiment_name)
-    
-    # Check created date (use folder creation time)
-    if os.path.exists(exp_dir):
-        created_time = os.path.getctime(exp_dir)
-        metadata["created"] = datetime.fromtimestamp(created_time).strftime('%Y-%m-%d %H:%M:%S')
-
-    # Check if model exists
-    model_dir = os.path.join(exp_dir, "models")
-    if os.path.exists(model_dir):
-        model_files = glob.glob(os.path.join(model_dir, "*.h5"))
-        if model_files:
-            metadata["model_file"] = os.path.basename(model_files[-1])  # Get the latest
-            metadata["status"] = "Trained"
-
-    # Check if results exist
-    results_dir = os.path.join(exp_dir, "results")
-    if os.path.exists(results_dir):
-        csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
-        if csv_files:
-            metadata["results_file"] = os.path.basename(csv_files[-1])
-            metadata["status"] = "Completed"
-    
-    # Check samples
-    samples_dir = os.path.join(exp_dir, "generated_samples")
-    if os.path.exists(samples_dir):
-        sample_files = glob.glob(os.path.join(samples_dir, "*.csv"))
-        metadata["num_samples"] = len(sample_files)
-
-    return metadata
-
-# Function to load training history
-def load_training_history(experiment_name, base_dir="memory"):
-    history_path = os.path.join(base_dir, experiment_name, "models", "history")
-    if os.path.exists(history_path):
-        try:
-            history = joblib.load(history_path)
-        except:
-            return None
-    return None
-
-
-# Function to load sample results
-def load_sample_results(experiment_name, base_dir="output_data"):
-    results_path = os.path.join(base_dir, experiment_name, "final.csv")
-    if os.path.exists(results_path):
-        try:
-            return pd.read_csv(results_path)
-        except:
-            return None
-    return None
 
 
 # Ensure input_data directory exists
@@ -823,7 +744,7 @@ Start by uploading your input file and setting an experiment name, then configur
             
             # Check if experiment is already running
             status_file = os.path.join("output", experiment_name, "status.json")
-            
+
             if os.path.exists(status_file):
                 with open(status_file, "r") as f:
                     status = json.load(f)
@@ -849,7 +770,7 @@ Start by uploading your input file and setting an experiment name, then configur
                 
                 # Switch to browse page to see progress
                 st.session_state.current_page = "Browse Experiments"
-        
+
         # if st.button("Run Pipeline", type="primary", disabled=run_disabled):
         #     # First save the configuration
         #     save_config(config)
@@ -980,21 +901,97 @@ Start by uploading your input file and setting an experiment name, then configur
 else:  # Browse Experiments page
     # New code for the experiment browser page
     st.write("View and analyze past experiments and their results")
-    
-    # Get experiment folders
-    experiment_folders = get_experiment_folders()
+
+    # Function to get experiment folders
+    def get_experiment_folders(base_dir="memory"):
+        if not os.path.exists(base_dir):
+            return []
+
+        experiment_folders = []
+        for folder in os.listdir(base_dir):
+            folder_path = os.path.join(base_dir, folder)
+            if os.path.isdir(folder_path):
+                # Check if this is an experiment folder (should have certain subdirectories)
+                if any([os.path.exists(os.path.join(folder_path, subdir)) for subdir in 
+                    ["models", "generated_samples"]]):
+                    experiment_folders.append(folder)
+        
+        return sorted(experiment_folders, reverse=True)  # Latest first
+
+    # Function to get experiment metadata
+    def get_experiment_metadata(experiment_name, base_dir="memory"):
+        ini_file_path = os.path.join(base_dir, experiment_name ,'config.ini')
+        config_file = configparser.ConfigParser()
+        config_file.read(ini_file_path)
+        metadata = {section: dict(config_file[section]) for section in config_file.sections()}
+        exp_dir = os.path.join(base_dir, experiment_name)
+        
+        # Check created date (use folder creation time)
+        if os.path.exists(exp_dir):
+            created_time = os.path.getctime(exp_dir)
+            metadata["created"] = datetime.fromtimestamp(created_time).strftime('%Y-%m-%d %H:%M:%S')
+
+        # Check if model exists
+        model_dir = os.path.join(exp_dir, "models")
+        model_files = os.listdir(model_dir)
+        if 'history' in model_files:
+            metadata["model_status"] = "Trained"
+
+        # Check if sampling done
+        sampling_dir = os.path.join(exp_dir, "generated_samples")
+        sampling_files = sorted(set([file.split('_batch')[0] for file in os.listdir(sampling_dir)]))
+        if len(sampling_files) == int(metadata['SAMPLING']['last_n_epochs']):
+            metadata["sampling_status"] = "Completed"
+        else:
+            metadata["sampling_status"] = "Incomplete"
+
+        # Check if results exist
+        results_dir = os.path.join(exp_dir, "output")
+        if os.path.exists(results_dir):
+            try:
+                csv_output = pd.read_csv(os.path.join(results_dir, "molecules_totalabundance.csv"))
+            except FileNotFoundError:
+                csv_output = pd.DataFrame()
+                metadata["novo_analysis_status"] = "Incomplete"
+            else:
+                metadata["novo_analysis_status"] = "Completed"
+            finally:
+                metadata["num_samples"] = csv_output.shape[0]
+        return metadata
+
+    # Function to load training history
+    def load_training_history(experiment_name, base_dir="memory"):
+        history_path = os.path.join(base_dir, experiment_name, "models", "history")
+        if os.path.exists(history_path):
+            try:
+                return joblib.load(history_path)
+            except:
+                return None
+        return None
+
+    # Function to load sample results
+    def load_sample_results(experiment_name, base_dir="memory"):
+        results_path = os.path.join(base_dir, experiment_name, "output" ,"molecules_totalabundance.csv")
+        if os.path.exists(results_path):
+            try:
+                return pd.read_csv(results_path)
+            except:
+                return None
+        return None
+
+    experiment_folders = get_experiment_folders(base_dir="memory")
 
     if not experiment_folders:
         st.warning("No experiments found. Run an experiment from the 'Create Experiment' page first.")
     else:
         # Create experiment browser
         st.markdown("### Available Experiments")
-        
+
         # Quick metrics
         total_experiments = len(experiment_folders)
         completed_experiments = sum(1 for exp in experiment_folders if 
-                                   get_experiment_metadata(exp)["status"] == "Completed")
-        
+                                   get_experiment_metadata(exp, base_dir='memory')["novo_analysis_status"] == "Completed")
+
         col1, col2 = st.columns(2)
         with col1:
             st.markdown(
@@ -1017,54 +1014,189 @@ else:  # Browse Experiments page
                 """, 
                 unsafe_allow_html=True
             )
-        
+
         # Experiment selection
         selected_experiment = st.selectbox(
             "Select Experiment", 
-            experiment_folders,
-            format_func=lambda x: f"{x} ({get_experiment_metadata(x)['status']})"
+            experiment_folders
         )
 
         if selected_experiment:
-            # Get metadata
-            metadata = get_experiment_metadata(selected_experiment)
             
+            # Get metadata
+            metadata = get_experiment_metadata(selected_experiment, base_dir='memory')
+
             # Display experiment details
             st.markdown("### Experiment Details")
-            col1, col2 = st.columns(2)
             
-            with col1:
-                st.markdown(f"**Name:** {metadata['name']}")
-                st.markdown(f"**Created:** {metadata['created']}")
-                st.markdown(f"**Status:** {metadata['status']}")
+            # First, show status overview
+            st.markdown("#### Experiment Status")
+            status_cols = st.columns(3)
             
-            with col2:
-                st.markdown(f"**Model File:** {metadata['model_file'] or 'None'}")
-                st.markdown(f"**Results File:** {metadata['results_file'] or 'None'}")
-                st.markdown(f"**Number of Samples:** {metadata['num_samples']}")
+            with status_cols[0]:
+                model_status = metadata.get("model_status", "Not Started")
+                status_color = "#4CAF50" if model_status == "Trained" else "#FF9800"
+                st.markdown(f"""
+                <div style="
+                    background-color: {status_color};
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                    color: white;
+                    text-align: center;
+                ">
+                    <p style="font-size: 16px; margin-bottom: 5px;"><strong>Model Training</strong></p>
+                    <p style="font-size: 18px;">{model_status}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with status_cols[1]:
+                sampling_status = metadata.get("sampling_status", "Not Started")
+                status_color = "#4CAF50" if sampling_status == "Completed" else "#FF9800"
+                st.markdown(f"""
+                <div style="
+                    background-color: {status_color};
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                    color: white;
+                    text-align: center;
+                ">
+                    <p style="font-size: 16px; margin-bottom: 5px;"><strong>Molecule Sampling</strong></p>
+                    <p style="font-size: 18px;">{sampling_status}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with status_cols[2]:
+                analysis_status = metadata.get("novo_analysis_status", "Not Started")
+                status_color = "#4CAF50" if analysis_status == "Completed" else "#FF9800"
+                st.markdown(f"""
+                <div style="
+                    background-color: {status_color};
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                    color: white;
+                    text-align: center;
+                ">
+                    <p style="font-size: 16px; margin-bottom: 5px;"><strong>Novo Analysis</strong></p>
+                    <p style="font-size: 18px;">{analysis_status}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Display experiment creation date and sample count
+            info_cols = st.columns(2)
+            
+            with info_cols[0]:
+                st.markdown(f"""
+                <div style="
+                    background-color: #f0f2f6;
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                ">
+                    <p style="font-size: 16px; color: #0e1117; margin-bottom: 5px;"><strong>Created</strong></p>
+                    <p style="font-size: 14px; color: #4b5563;">{metadata.get('created', 'N/A')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with info_cols[1]:
+                st.markdown(f"""
+                <div style="
+                    background-color: #f0f2f6;
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                ">
+                    <p style="font-size: 16px; color: #0e1117; margin-bottom: 5px;"><strong>Generated Samples</strong></p>
+                    <p style="font-size: 14px; color: #4b5563;">{metadata.get('num_samples', 0)}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Now display the config items in a nice placard style
+            st.markdown("#### Configuration Parameters")
+            
+            # Create tabs for different config sections
+            config_sections = [s for s in metadata if s not in ['created', 'model_status', 'sampling_status', 'novo_analysis_status', 'num_samples']]
+            config_tabs = st.tabs(config_sections)
+            
+            for i, section in enumerate(config_sections):
+                with config_tabs[i]:
+                    if isinstance(metadata[section], dict):
+                        # Create a grid layout for placards
+                        param_cols = st.columns(3)
+                        
+                        # Display each parameter as a placard
+                        for idx, (param, value) in enumerate(metadata[section].items()):
+                            col_idx = idx % 3
+                            with param_cols[col_idx]:
+                                st.markdown(f"""
+                                <div style="
+                                    background-color: #f0f2f6;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin-bottom: 10px;
+                                    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                                ">
+                                    <p style="font-size: 16px; color: #0e1117; margin-bottom: 5px;"><strong>{param}</strong></p>
+                                    <p style="font-size: 14px; color: #4b5563;">{value}</p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                    else:
+                        st.write(f"{section}: {metadata[section]}")
             
             # Training history (if available)
             history = load_training_history(selected_experiment)
             if history:
                 st.markdown("### Training History")
                 
-                # Create figure for training plot
-                fig, ax = plt.subplots(figsize=(10, 6))
-                
-                # Plot training and validation loss
-                epochs = range(1, len(history['loss']) + 1)
-                ax.plot(epochs, history['loss'], 'b-', label='Training Loss')
+                # Create a dataframe for the history data
+                history_df = pd.DataFrame({
+                    'epoch': range(1, len(history['loss']) + 1),
+                    'Training Loss': history['loss']
+                })
                 
                 if 'val_loss' in history:
-                    ax.plot(epochs, history['val_loss'], 'r-', label='Validation Loss')
+                    history_df['Validation Loss'] = history['val_loss']
                 
-                ax.set_title('Training and Validation Loss')
-                ax.set_xlabel('Epochs')
-                ax.set_ylabel('Loss')
-                ax.legend()
-                ax.grid(True, linestyle='--', alpha=0.6)
+                # Create a Plotly figure
+                import plotly.express as px
                 
-                st.pyplot(fig)
+                fig = px.line(
+                    history_df, 
+                    x='epoch', 
+                    y=['Training Loss', 'Validation Loss'] if 'val_loss' in history else ['Training Loss'],
+                    labels={'value': 'Loss', 'variable': 'Type'},
+                    color_discrete_sequence=['#2E86C1', '#E74C3C'],  # Blue for training, Red for validation
+                    title='Training and Validation Loss'
+                )
+
+                # Customize the figure
+                fig.update_layout(
+                    xaxis_title='Epochs',
+                    yaxis_title='Loss (categorical crossentropy)',
+                    hovermode='x unified',
+                    legend_title_text='',
+                    height=700,
+                    template='plotly_white',
+                    grid=dict(rows=1, columns=1, pattern='independent'),
+                )
+                
+                # Add grid lines
+                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGrey')
+                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGrey')
+                
+                # Display the chart
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Optionally, display the dataframe with the raw values
+                with st.expander("**View Training Losses**"):
+                    st.dataframe(history_df)
 
             # Sample results (if available)
             results = load_sample_results(selected_experiment)
@@ -1075,7 +1207,7 @@ else:  # Browse Experiments page
                 st.markdown("#### Summary Statistics")
                 
                 # Show a sample of data
-                st.dataframe(results.head(10))
+                st.dataframe(results)
                 
                 # Download button for full results
                 results_path = os.path.join("output", selected_experiment, "results", "metrics.csv")
@@ -1087,9 +1219,150 @@ else:  # Browse Experiments page
                             file_name=f"{selected_experiment}_results.csv",
                             mime="text/csv"
                         )
+            
+                st.markdown("### Generated Molecules")
 
+                # Display summary statistics
+                st.markdown("#### Summary Statistics")
+                
+                # Show interactive dataframe
+                if 'SMILES' in results.columns:
+                
+                    # Create a selectbox to choose a molecule
+                    if len(results) > 0:
+                        selected_index = st.selectbox(
+                            "Select molecule to view:",
+                            options=range(len(results)),
+                            format_func=lambda i: f"Molecule {i+1}"
+                        )
+                        
+                        selected_smiles = results['SMILES'].iloc[selected_index]
+                        
+                        st.code(selected_smiles, language=None)
+                        
+                        # Show "View Structure" button
+                        if st.button("View Structure", key="view_structure"):
+                            # Check if rdkit is available
+                            try:
+                                from rdkit import Chem
+                                from rdkit.Chem import Draw
+                                
+                                mol = Chem.MolFromSmiles(selected_smiles)
+                                if mol:
+                                    # Generate the image
+                                    img = Draw.MolToImage(mol, size=(1260, 400))
+                                    
+                                    # Display the image
+                                    st.image(img, caption="Molecular Structure")
+                                    
+                                    # Add some basic molecular properties
+                                    st.markdown("#### Properties")
+                                    from rdkit.Chem import Descriptors, Lipinski
 
+                                    props = {
+                                        "Molecular Weight": round(Descriptors.MolWt(mol), 2),
+                                        "LogP": round(Descriptors.MolLogP(mol), 2),
+                                        "H-Bond Donors": Lipinski.NumHDonors(mol),
+                                        "H-Bond Acceptors": Lipinski.NumHAcceptors(mol),
+                                        "Rotatable Bonds": Descriptors.NumRotatableBonds(mol)
+                                    }
+                                    
+                                    prop_cols = st.columns(3)
 
+                                    # Display each property as a placard
+                                    for idx, (name, value) in enumerate(props.items()):
+                                        col_idx = idx % 3
+                                        with prop_cols[col_idx]:
+                                            st.markdown(f"""
+                                            <div style="
+                                                background-color: #f0f2f6;
+                                                border-radius: 10px;
+                                                padding: 15px;
+                                                margin-bottom: 10px;
+                                                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                                            ">
+                                                <p style="font-size: 16px; color: #0e1117; margin-bottom: 5px;"><strong>{name}</strong></p>
+                                                <p style="font-size: 14px; color: #4b5563;">{value}</p>
+                                            </div>
+                                            """, unsafe_allow_html=True)
+                                    
+                                    # Add download buttons
+                                    download_col1, download_col2 = st.columns(2)
+                                    import io
+                                    from PIL import Image
+                                    import base64
+                                    from reportlab.lib.pagesizes import letter
+                                    from reportlab.pdfgen import canvas
+                                    from reportlab.lib.utils import ImageReader
+                                    
+                                    # Function to create PNG
+                                    def get_png_download():
+                                        buf = io.BytesIO()
+                                        img.save(buf, format='PNG')
+                                        byte_im = buf.getvalue()
+                                        return byte_im
+                                    
+                                    # Function to create PDF with structure and properties
+                                    def get_pdf_download():
+                                        buffer = io.BytesIO()
+                                        c = canvas.Canvas(buffer, pagesize=letter)
+                                        width, height = letter
+                                        
+                                        # Add title
+                                        c.setFont("Helvetica-Bold", 16)
+                                        c.drawString(72, height - 72, f"Molecule: {selected_index + 1}")
+                                        
+                                        # Add SMILES
+                                        c.setFont("Helvetica", 10)
+                                        c.drawString(72, height - 100, "SMILES:")
+                                        c.drawString(72, height - 115, selected_smiles)
+                                        
+                                        # Add the molecule image
+                                        img_buf = io.BytesIO()
+                                        img.save(img_buf, format='PNG')
+                                        img_buf.seek(0)
+                                        img_reader = ImageReader(img_buf)
+                                        c.drawImage(img_reader, 72, height - 400, width=450, height=250, preserveAspectRatio=True)
+                                        
+                                        # Add properties
+                                        c.setFont("Helvetica-Bold", 14)
+                                        c.drawString(72, height - 420, "Properties:")
+                                        
+                                        c.setFont("Helvetica", 12)
+                                        y_pos = height - 450
+                                        for name, value in props.items():
+                                            c.drawString(72, y_pos, f"{name}: {value}")
+                                            y_pos -= 20
+                                        
+                                        c.save()
+                                        buffer.seek(0)
+                                        return buffer
+                                    
+                                    # Add PNG download button
+                                    with download_col1:
+                                        st.download_button(
+                                            label="Download PNG",
+                                            data=get_png_download(),
+                                            file_name=f"molecule_{selected_index + 1}.png",
+                                            mime="image/png"
+                                        )
+                                    
+                                    # Add PDF download button
+                                    with download_col2:
+                                        st.download_button(
+                                            label="Download PDF Report",
+                                            data=get_pdf_download(),
+                                            file_name=f"molecule_{selected_index + 1}_report.pdf",
+                                            mime="application/pdf"
+                                        )
+                                else:
+                                    st.error("Could not generate molecular structure. Invalid SMILES string.")
+                            except ImportError:
+                                st.error("RDKit is required to display molecular structures. Please install it with `pip install rdkit`.")
+
+            
+                        
+                        
 
 
 # Footer
