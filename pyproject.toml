@@ -1,0 +1,23 @@
+[project]
+name = "hgm"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Vasudev Gupta",email = "guptavasudelhi@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "rdkit (>=2024.9.6,<2025.0.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "joblib (>=1.4.2,<2.0.0)",
+    "keras (>=2.14.0,<3.0.0)",
+    "ml-dtypes (>=0.5.1,<0.6.0)",
+    "typing-extensions (>=4.12.2,<5.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
