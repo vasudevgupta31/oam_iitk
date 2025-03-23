@@ -49,6 +49,10 @@ os.makedirs(exp_beam_search_path, exist_ok=True)
 exp_output_path = os.path.join(exp_memory_path, 'output')
 os.makedirs(exp_output_path, exist_ok=True)
 
+# BPP models path
+bpp_models_path = os.path.join(root_path, 'bpp', 'models')
+os.makedirs(bpp_models_path, exist_ok=True)
+
 
 def clean_experiment_memory():
     if exp_name in os.listdir(memory_path):
