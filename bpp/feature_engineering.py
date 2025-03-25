@@ -50,12 +50,24 @@ class MorganFingerprintTransformer(SMILESTransformer):
         self.n_bits = n_bits
         
     def _process_smiles(self, smiles):
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is not None:
-            fp = GetMorganFingerprintAsBitVect(mol, self.radius, nBits=self.n_bits)
-            return np.array(fp)
-        else:
-            return np.zeros(self.n_bits)
+        try:
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is not None:
+                # Use MorganGenerator - the recommended approach (avoids deprecation warnings)
+                from rdkit.Chem.AllChem import MorganGenerator
+                fp = np.zeros((0,), dtype=np.int8)
+                MorganGenerator.GetMorganFingerprintBitVect(mol, radius=self.radius, nBits=self.n_bits, bitInfo=None, useChirality=False, useBondTypes=True, useFeatures=False, vec=fp)
+                return np.array(fp)
+            else:
+                return np.zeros(self.n_bits)
+        except Exception:
+            # Fallback to older method if MorganGenerator not available
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is not None:
+                fp = GetMorganFingerprintAsBitVect(mol, self.radius, nBits=self.n_bits)
+                return np.array(fp)
+            else:
+                return np.zeros(self.n_bits)
 
 
 class RDKitDescriptorTransformer(SMILESTransformer):
@@ -63,27 +75,60 @@ class RDKitDescriptorTransformer(SMILESTransformer):
     
     def __init__(self, descriptors=None, n_jobs=-1, verbose=0):
         super().__init__(n_jobs=n_jobs, verbose=verbose)
+        
+        # Store descriptor names and functions separately to avoid lambda pickling issues
         if descriptors is None:
-            self.descriptors = Descriptors.descList
+            # Only use built-in descriptors (avoid custom lambdas)
+            safe_descriptors = []
+            for desc_name, desc_func in Descriptors.descList:
+                # Skip descriptors that are lambda functions (can't be pickled)
+                if "<lambda>" not in str(desc_func):
+                    safe_descriptors.append((desc_name, desc_func))
+            self.descriptors = safe_descriptors
         else:
             self.descriptors = descriptors
+            
+        # Store descriptor count for initializing empty arrays
+        self.n_descriptors = len(self.descriptors)
     
     def _process_smiles(self, smiles):
         mol = Chem.MolFromSmiles(smiles)
         if mol is not None:
             try:
-                return np.array([desc[1](mol) for desc in self.descriptors])
-            except:
-                return np.zeros(len(self.descriptors))
+                return np.array([desc_func(mol) for _, desc_func in self.descriptors])
+            except Exception:
+                return np.zeros(self.n_descriptors)
         else:
-            return np.zeros(len(self.descriptors))
+            return np.zeros(self.n_descriptors)
+
+
+class LogTargetTransformer(BaseEstimator, TransformerMixin):
+    """Transform target values with log and inverse transform predictions to original scale"""
+    
+    def __init__(self, base=np.e):
+        self.base = base
+    
+    def fit(self, y, X=None):
+        return self
+    
+    def transform(self, y):
+        """Apply log transformation to y values"""
+        if isinstance(y, pd.Series):
+            y = y.values
+        return np.log(y) / np.log(self.base)
+    
+    def inverse_transform(self, y_pred):
+        """Reverse log transformation to get predictions in original scale"""
+        return np.power(self.base, y_pred)
+
 
 
 def create_molecular_pipeline(fingerprint_radius=2, 
                              fingerprint_bits=2048,
                              descriptor_subset=None,
                              n_jobs=-1, 
-                             scale_features=True):
+                             scale_features=True,
+                             use_descriptors=True):
     """
     Create an optimized pipeline for molecular feature extraction
     
@@ -99,19 +144,14 @@ def create_molecular_pipeline(fingerprint_radius=2,
         Number of parallel jobs to run (-1 for all available cores)
     scale_features : bool
         Whether to scale the features with StandardScaler
+    use_descriptors : bool
+        Whether to include RDKit descriptors (set to False to avoid pickling issues)
         
     Returns:
     --------
     sklearn.pipeline.Pipeline
         Ready-to-use sklearn pipeline for feature generation
     """
-    # Define descriptor subset if provided
-    if descriptor_subset is not None:
-        descriptors = [(desc[0], desc[1]) for desc in Descriptors.descList 
-                      if desc[0] in descriptor_subset]
-    else:
-        descriptors = None
-    
     # Create feature generation components
     fingerprint_transformer = MorganFingerprintTransformer(
         radius=fingerprint_radius,
@@ -119,30 +159,45 @@ def create_molecular_pipeline(fingerprint_radius=2,
         n_jobs=n_jobs
     )
     
-    descriptor_transformer = RDKitDescriptorTransformer(
-        descriptors=descriptors,
-        n_jobs=n_jobs
-    )
-    
-    # Create preprocessing for descriptors (handle NaNs and scale)
-    descriptor_pipeline = Pipeline([
-        ('descriptors', descriptor_transformer),
-        ('imputer', SimpleImputer(strategy='median')),
-        ('scaler', StandardScaler() if scale_features else 'passthrough')
-    ])
-    
     # Create preprocessing for fingerprints (optional scaling)
     fingerprint_pipeline = Pipeline([
         ('fingerprints', fingerprint_transformer),
         ('scaler', StandardScaler() if scale_features else 'passthrough')
     ])
     
-    # Complete pipeline with feature union
-    complete_pipeline = Pipeline([
-        ('features', FeatureUnion([
-            ('fingerprint_pipe', fingerprint_pipeline),
-            ('descriptor_pipe', descriptor_pipeline)
-        ]))
-    ])
+    # If we're including descriptors
+    if use_descriptors:
+        # Define descriptor subset if provided
+        if descriptor_subset is not None:
+            # Ensure we only use pickable descriptors (no lambdas)
+            descriptors = []
+            for desc in Descriptors.descList:
+                if desc[0] in descriptor_subset and "<lambda>" not in str(desc[1]):
+                    descriptors.append(desc)
+        else:
+            descriptors = None
+        
+        descriptor_transformer = RDKitDescriptorTransformer(
+            descriptors=descriptors,
+            n_jobs=n_jobs
+        )
+        
+        # Create preprocessing for descriptors (handle NaNs and scale)
+        descriptor_pipeline = Pipeline([
+            ('descriptors', descriptor_transformer),
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler() if scale_features else 'passthrough')
+        ])
+        
+        # Complete pipeline with feature union
+        complete_pipeline = Pipeline([
+            ('features', FeatureUnion([
+                ('fingerprint_pipe', fingerprint_pipeline),
+                ('descriptor_pipe', descriptor_pipeline)
+            ]))
+        ])
+    else:
+        # Just use fingerprints without descriptors
+        complete_pipeline = fingerprint_pipeline
     
     return complete_pipeline

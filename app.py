@@ -773,133 +773,6 @@ Start by uploading your input file and setting an experiment name, then configur
                 # Switch to browse page to see progress
                 st.session_state.current_page = "Browse Experiments"
 
-        # if st.button("Run Pipeline", type="primary", disabled=run_disabled):
-        #     # First save the configuration
-        #     save_config(config)
-        #     start_time = time.time()
-        #     cmd = ["python", "main.py"]
-
-        #     # Create a placeholder for the progress bar
-        #     progress_placeholder = st.empty()
-            
-        #     # Create a placeholder for logs
-        #     log_placeholder = st.empty()
-            
-        #     # Reset logs for a fresh run
-        #     st.session_state.logs = []
-            
-        #     # Start pipeline execution
-        #     progress_bar = progress_placeholder.progress(0.0)
-
-        #     update_logs(f"Starting HGM Pipeline execution for experiment: {experiment_name}", log_placeholder)
-        #     update_logs(f"Using input file: {input_file}", log_placeholder)
-        #     update_logs("Configuration saved to config.ini", log_placeholder)
-
-        #     try:
-        #         # Update progress to 10% to indicate pipeline has started
-        #         progress_bar.progress(0.1)
-                
-        #         # Prepare command with arguments
-        #         cmd = ["python", "main.py"]
-
-        #         # Run the command
-        #         update_logs(f"Executing command: {' '.join(cmd)}", log_placeholder)
-                
-        #         # Execute command and capture output
-        #         process = subprocess.Popen(
-        #             cmd,
-        #             stdout=subprocess.PIPE,
-        #             stderr=subprocess.STDOUT,
-        #             text=True,
-        #             bufsize=1,
-        #             universal_newlines=True
-        #         )
-
-        #         # Stream output in real-time
-        #         progress_value = 0.1
-        #         progress_step = 0.9 / 4  # Divide remaining progress among 4 stages
-
-        #         while True:
-        #             line = process.stdout.readline()
-        #             if not line and process.poll() is not None:
-        #                 break
-        #             if line:
-        #                 update_logs(line.strip(), log_placeholder)
-                        
-        #                 # Update progress based on pipeline stages
-        #                 if "Data processing completed successfully" in line:
-        #                     progress_value += progress_step
-        #                     progress_bar.progress(progress_value)
-        #                 elif "Network training completed successfully" in line:
-        #                     progress_value += progress_step
-        #                     progress_bar.progress(progress_value)
-        #                 elif "Sample generation completed" in line:
-        #                     progress_value += progress_step
-        #                     progress_bar.progress(progress_value)
-        #                 elif "Novo analysis completed successfully" in line:
-        #                     progress_value += progress_step
-        #                     progress_bar.progress(progress_value)
-
-        #         # Check return code
-        #         return_code = process.poll()
-        #         if return_code == 0:
-        #             # Set progress to 100% when complete
-        #             progress_bar.progress(1.0)
-                    
-        #             # Log completion message
-        #             update_logs("🚀 Pipeline execution completed successfully!", log_placeholder)
-        #             update_logs(f"Results are available in the output directory for experiment: {experiment_name}", log_placeholder)
-                    
-        #             # Display a success message
-        #             st.markdown(
-        #                 "<div class='success-message'>Pipeline execution completed successfully! Results are available in the output directory.</div>", 
-        #                 unsafe_allow_html=True
-        #             )
-        #             # Send email notification if email is configured
-        #             if "Communication" in config and "email" in config["Communication"] and config["Communication"]["email"]:
-        #                 email = config["Communication"]["email"]
-                        
-        #                 # Collect some basic results to include in the email
-        #                 results = {
-        #                     "Execution Time": f"{time.time() - start_time:.2f} seconds",
-        #                     "Output Directory": f"output/{experiment_name}"
-        #                 }
-                        
-        #                 # Try to get more detailed results if available
-        #                 try:
-        #                     # Check if any results are available
-        #                     result_files = glob.glob(f"output/{experiment_name}/results/*.csv")
-        #                     if result_files:
-        #                         results["Results Files"] = len(result_files)
-        #                 except Exception:
-        #                     pass
-
-        #                 from funcs.email import send_email_notification
-        #                 # Send the email
-        #                 if send_email_notification(email, experiment_name, "Completed Successfully", results):
-        #                     update_logs(f"✉️ Email notification sent to {email}", log_placeholder)
-        #                 else:
-        #                     update_logs(f"⚠️ Failed to send email notification to {email}")
-        #         else:
-        #             # Log error message
-        #             update_logs(f"❌ Pipeline execution failed with return code: {return_code}", log_placeholder)
-                    
-        #             # Display an error message
-        #             st.error(f"Pipeline execution failed with return code: {return_code}")
-                
-        #     except Exception as e:
-        #         # Update progress to indicate failure
-        #         progress_bar.progress(1.0)
-                
-        #         # Log error message
-        #         update_logs(f"❌ Error during pipeline execution: {str(e)}", log_placeholder)
-                
-        #         # Display an error message
-        #         st.error(f"An error occurred during pipeline execution: {str(e)}")
-                
-        # elif run_disabled:
-        #     st.warning("Please upload an input file and set an experiment name before running the pipeline.")
-
 else:  # Browse Experiments page
     # New code for the experiment browser page
     st.write("View and analyze past experiments and their results")
@@ -927,7 +800,7 @@ else:  # Browse Experiments page
         config_file.read(ini_file_path)
         metadata = {section: dict(config_file[section]) for section in config_file.sections()}
         exp_dir = os.path.join(base_dir, experiment_name)
-        
+
         # Check created date (use folder creation time)
         if os.path.exists(exp_dir):
             created_time = os.path.getctime(exp_dir)
@@ -973,7 +846,7 @@ else:  # Browse Experiments page
 
     # Function to load sample results
     def load_sample_results(experiment_name, base_dir="memory"):
-        results_path = os.path.join(base_dir, experiment_name, "output" ,"molecules_totalabundance.csv")
+        results_path = os.path.join(base_dir, experiment_name, "output" ,"molecules_totalabundance_bpp.csv")
         if os.path.exists(results_path):
             try:
                 return pd.read_csv(results_path)
