@@ -996,13 +996,63 @@ else:  # Browse Experiments page
             # Now display the config items in a nice placard style
             st.markdown("#### Configuration Parameters")
             
+            # Function to show data file content in a scrollable table
+            def show_data_content(experiment_name, filename, base_dir="memory"):
+                file_path = os.path.join(base_dir, experiment_name, filename)
+                if os.path.exists(file_path):
+                    try:
+                        # Read the entire file
+                        with open(file_path, 'r') as f:
+                            lines = [line.strip() for line in f.readlines()]
+                        
+                        # Count total lines
+                        total_lines = len(lines)
+                        
+                        # Create a nicely formatted display
+                        st.markdown(f"**{filename}** ({total_lines} entries)")
+                        
+                        # Create a DataFrame for display
+                        df = pd.DataFrame({
+                            "Entry #": range(1, total_lines + 1),
+                            "SMILES": lines
+                        })
+                        
+                        # Display the dataframe with a height limit
+                        st.dataframe(df, use_container_width=True, height=400)
+                        
+                        # Add a download button
+                        with open(file_path, 'rb') as f:
+                            st.download_button(
+                                label=f"Download {filename}",
+                                data=f,
+                                file_name=filename,
+                                mime="text/plain"
+                            )
+                    except Exception as e:
+                        st.error(f"Error loading {filename}: {str(e)}")
+                else:
+                    st.warning(f"{filename} file not found")
+            
             # Create tabs for different config sections
             config_sections = [s for s in metadata if s not in ['created', 'model_status', 'sampling_status', 'novo_analysis_status', 'num_samples']]
-            config_tabs = st.tabs(config_sections)
+            # Add a Data Samples tab
+            all_tabs = config_sections + ["Data Samples"]
+            config_tabs = st.tabs(all_tabs)
             
-            for i, section in enumerate(config_sections):
+            for i, section in enumerate(all_tabs):
                 with config_tabs[i]:
-                    if isinstance(metadata[section], dict):
+                    if section == "Data Samples":
+                        
+                        # Create tabs for training and validation data
+                        data_tab1, data_tab2 = st.tabs(["Training Data", "Validation Data"])
+                        
+                        with data_tab1:
+                            show_data_content(selected_experiment, "data_tr.txt")
+                        
+                        with data_tab2:
+                            show_data_content(selected_experiment, "data_val.txt")
+                    
+                    elif isinstance(metadata.get(section), dict):
                         # Create a grid layout for placards
                         param_cols = st.columns(3)
                         
