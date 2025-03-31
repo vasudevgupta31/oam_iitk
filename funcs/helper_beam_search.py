@@ -31,6 +31,16 @@ def save_smiles(candidates, scores, indices_token, start_char, pad_char, end_cha
     """
     Save the valid SMILES, along with
     their score and a picture representation.
+    
+    Args:
+        candidates: List of candidate sequences
+        scores: List of scores for each candidate
+        indices_token: Dictionary mapping index to token
+        start_char: Start character token
+        pad_char: Padding character token
+        end_char: End character token
+        save_path: Directory to save outputs
+        name_file: Prefix for output files (e.g., "epoch_01")
     """
     all_smi = []
     all_mols = []  # rdkit format
@@ -47,9 +57,29 @@ def save_smiles(candidates, scores, indices_token, start_char, pad_char, end_cha
             all_mols.append(mol)
             all_scores.append(s)
     
+    # Create a dictionary mapping SMILES to their scores
     d_smi_to_score = dict(zip(all_smi, all_scores))
-    write_in_file(path_to_file=os.path.join(save_path, f'{name_file}_SMILES.txt'), data=all_smi)
-    joblib.dump(value=d_smi_to_score, filename=os.path.join(save_path, f'{name_file}_smi_to_score.pkl'))
+    
+    # Also save metadata about the beam search
+    metadata = {
+        "total_candidates": len(candidates),
+        "valid_smiles": len(all_smi),
+        "success_rate": (len(all_smi) / len(candidates)) * 100 if len(candidates) > 0 else 0
+    }
+    
+    # Save SMILES to text file
+    smiles_file = os.path.join(save_path, f'{name_file}_SMILES.txt')
+    write_in_file(path_to_file=smiles_file, data=all_smi)
+    print(f"Saved {len(all_smi)} valid SMILES to {smiles_file}")
+    
+    # Save scores to pickle file
+    score_file = os.path.join(save_path, f'{name_file}_smi_to_score.pkl')
+    joblib.dump(value={"scores": d_smi_to_score, "metadata": metadata}, filename=score_file)
+    print(f"Saved scores and metadata to {score_file}")
+    
+    # Removed molecule grid image saving to improve performance
+            
+    return len(all_smi)
 
 
 def beam_search_decoder_optimized(k, model, vocab_size, max_len, indices_token, token_indices, name_file,
@@ -144,7 +174,7 @@ def beam_search_decoder_optimized(k, model, vocab_size, max_len, indices_token, 
     sys.stdout.flush()
     
     # Save results
-    save_smiles(
+    num_valid_smiles = save_smiles(
         candidates=sequences,
         scores=sequence_scores,
         indices_token=indices_token,
@@ -154,5 +184,12 @@ def beam_search_decoder_optimized(k, model, vocab_size, max_len, indices_token, 
         save_path=save_path,
         name_file=name_file
     )
+    
+    # Print summary
+    print(f"Beam search for {name_file} completed:")
+    print(f"- Total candidates: {len(sequences)}")
+    print(f"- Valid SMILES: {num_valid_smiles}")
+    print(f"- Success rate: {num_valid_smiles/len(sequences)*100:.2f}%")
+    sys.stdout.flush()
     
     return sequences, sequence_scores

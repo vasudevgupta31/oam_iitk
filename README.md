@@ -21,8 +21,119 @@ hgm/
 │── app.py                # Streamlit application entry point
 │── app_link.py           # Connects the Streamlit app with the backend pipeline
 │── main.py               # Entry point for executing the pipeline via CLI
+│── bpp/                  # Bioactivity prediction pipeline module
+│   │── models/           # Trained machine learning models for property prediction
+│   │── dataset_config.py # Configuration for different prediction datasets
+│   │── feature_engineering.py # Molecular feature extraction and preprocessing
+│   │── predict.py        # Functions for predicting properties of molecules
+│   │── train_models.py   # Scripts for training ML models on bioactivity data
+│   │── training_data/    # Training datasets for bioactivity models
+│   └── transformers.py   # Data transformation utilities
 │── README.md             # Project documentation
 ```
+
+## **Backend Architecture & Implementation**
+
+The Streamlit application is powered by a sophisticated backend pipeline that orchestrates several machine learning and cheminformatics processes. Here's a detailed overview of what happens behind the scenes:
+
+### **Core Components**
+
+1. **Hierarchical Generative Model (HGM)**
+   - A multi-level deep learning architecture optimized for SMILES generation
+   - Utilizes LSTM/GRU layers for sequence modeling with attention mechanisms
+   - Trained using teacher forcing with categorical cross-entropy loss
+   - Implements both sampling and beam search for molecule generation
+
+2. **Data Processing Pipeline**
+   - Handles SMILES canonicalization, validation, and filtering
+   - Performs data augmentation by generating multiple valid SMILES for each molecule
+   - Tokenizes SMILES strings and builds vocabulary dictionary
+   - Creates train/validation splits with sequence length constraints
+
+3. **Bioactivity Prediction Pipeline (BPP)**
+   - Ensemble of trained ML models for predicting key properties:
+     - EC50 values for GLP-1R, GCGR, and GIP receptors
+     - Binding affinity (Kd) for target receptors
+   - Uses Morgan fingerprints and other molecular descriptors as features
+   - Implements target transformation for better prediction of skewed distributions
+
+4. **Experiment Management System**
+   - Maintains isolated experiment environments in the memory directory
+   - Tracks experiment status and results through JSON status files
+   - Manages configuration inheritance and parameter overrides
+   - Provides resumability for interrupted experiments
+
+### **Process Flow**
+
+When a user configures and runs an experiment through the Streamlit interface, the backend executes the following sequence:
+
+1. **Configuration Initialization**
+   - Parses and validates user inputs from the Streamlit interface
+   - Creates experiment directory with config.ini file
+   - Sets up logging and monitoring infrastructure
+
+2. **Data Preprocessing**
+   - Reads input SMILES data from specified files
+   - Applies filtering based on min/max length parameters
+   - Generates augmented variants of each molecule
+   - Splits data into training and validation sets
+   - Creates tokenized representations for neural network input
+
+3. **Model Training**
+   - Initializes model architecture based on configuration
+   - Loads pretrained weights if specified
+   - Sets up callbacks for checkpointing, early stopping, and learning rate scheduling
+   - Executes training loop with specified batch size and epochs
+   - Saves model checkpoints and training history
+
+4. **Molecule Generation**
+   - Performs beam search with configured width parameter
+   - Samples molecules using temperature-controlled multinomial sampling
+   - Executes sampling from multiple checkpoints in parallel
+   - Filters generated molecules for validity and uniqueness
+   - Saves generated molecules to experiment directory
+
+5. **Post-Processing & Analysis**
+   - Applies the BPP models to predict properties of generated molecules
+   - Calculates drug-likeness and other physicochemical properties
+   - Filters molecules based on desired property profiles
+   - Generates visualizations and metrics for the Streamlit interface
+   - Creates downloadable reports and molecule files
+
+### **Performance Optimizations**
+
+The backend implements several optimizations to ensure efficient execution:
+
+1. **Multiprocessing for Sampling**
+   - Distributes sampling across CPU cores for faster generation
+   - Implements proper locking mechanisms for thread safety
+
+2. **GPU Acceleration**
+   - Leverages TensorFlow's GPU support for model training and inference
+   - Optimizes batch sizes for GPU memory constraints
+
+3. **Efficient Data Handling**
+   - Uses memory-mapped files for large datasets
+   - Implements generators for on-the-fly data augmentation
+   - Employs efficient numpy operations for data transformations
+
+4. **Caching Mechanisms**
+   - Caches molecular fingerprints and descriptors to avoid redundant calculations
+   - Implements memoization for expensive cheminformatics operations
+
+### **Security Features**
+
+1. **Authentication System**
+   - Password-protected access to the Streamlit interface
+   - Secure credential storage and verification
+
+2. **Input Validation**
+   - Sanitizes all user inputs before processing
+   - Implements proper error handling for invalid inputs
+
+3. **Resource Limits**
+   - Controls computational resource usage to prevent server overload
+   - Implements timeouts for long-running operations
 
 ## **Installation**
 
@@ -79,7 +190,9 @@ The Streamlit application provides an intuitive GUI for configuring, running, an
    ```bash
    conda activate oam_hgm
    streamlit run app.py
-   If want to tunnel for other people without hosting <!-- ngrok http http://localhost:8501 -->
+
+   If want to tunnel for other people over web <!-- ngrok http http://localhost:8501 -->
+   or if you have cloudflare > cloudflared tunnel --url http://localhost:8501
    ```
 
 2. **Access the web interface** in your browser at `http://localhost:8501`

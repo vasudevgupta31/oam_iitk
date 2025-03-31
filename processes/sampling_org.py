@@ -10,9 +10,10 @@ import numpy as np
 from rdkit import rdBase
 rdBase.DisableLog('rdApp.*')
 from keras.models import load_model
+from pandas import read_csv
 
 import configs.fixed_params as FP
-from configs.path_config import exp_name, exp_models_path, exp_gen_samples_path, config_file
+from configs.path_config import exp_name, exp_models_path, exp_gen_samples_path, config_file, exp_beam_search_path
 
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -303,11 +304,6 @@ def perform_sampling_batches(batch_size = 100, num_processes=None):
     if n_sample > 5000:
         warnings.warn('You will sample more than 5000 SMILES; this will take a while')
 
-    last_n_epochs = int(config_file['SAMPLING']['last_n_epochs'])
-    total_epochs = len(joblib.load(os.path.join(exp_models_path, 'history'))['loss'])
-    start_epoch = total_epochs - last_n_epochs + 1
-    end_epoch = total_epochs
-
     max_len = int(config_file['PROCESSING']['max_len'])
     start_char = FP.PROCESSING_FIXED['start_char']
     end_char = FP.PROCESSING_FIXED['end_char']
@@ -315,8 +311,13 @@ def perform_sampling_batches(batch_size = 100, num_processes=None):
     token_indices = FP.TOKEN_INDICES
 
     print('\nSTART SAMPLING')
-    
-    for epoch in range(start_epoch, end_epoch + 1):
+    similarity_df_path = os.path.join(exp_beam_search_path, "tanimoto_similarity_summary.csv")
+    top_epochs = (read_csv(similarity_df_path)
+                     .sort_values(by='avg_similarity', ascending=False)
+                     .head(5)['epoch']
+                     .values)
+
+    for epoch in top_epochs:
         model_path = os.path.join(exp_models_path, f'epoch_{epoch:02d}.h5')
         print(f'Sampling from model saved at epoch {epoch} with temp {temp}')
 

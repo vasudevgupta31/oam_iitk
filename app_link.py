@@ -81,7 +81,7 @@ def run_pipeline_in_background(experiment_name):
                 bufsize=1,
                 universal_newlines=True
             )
-            
+
             # Process output
             while True:
                 line = process.stdout.readline()

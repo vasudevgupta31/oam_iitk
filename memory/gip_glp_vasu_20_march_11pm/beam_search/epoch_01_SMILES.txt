@@ -1,0 +1,4 @@
+c1(-c2ccc(Cl)cc2)n(-c2c(Cl)cc(Cl)cc2)n(-c2ccc(Cl)cc2Cl)n1
+c1(-c2ccc(Cl)cc2)n(-c2c(Cl)cc(Cl)cc2)nc(-c2ccc(Cl)cc2)n1
+FC(F)(F)c1cc(C(=O)Nc2ccc3c(c2)-c2c(c(C(=O)N)nn2-c2ccc(S(=O)(=O)N)cc2)CC3)ccc1
+FC(F)(F)c1cc(C(=O)Nc2ccc3c(c2)-c2c(c(C(=O)N)nn2-c2ccc(S(=O)(=O)N)cc2)CC3)c(Cl)cc1

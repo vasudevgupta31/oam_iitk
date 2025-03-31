@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HGM Pipeline Process Flow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #3498db;
+            margin-top: 25px;
+        }
+        .process-container {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .process-step {
+            background-color: #fff;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+        .process-step h4 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .flow-arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+        .data-flow {
+            background-color: #e8f4f8;
+            padding: 10px 15px;
+            border-radius: 4px;
+            border-left: 3px solid #2ecc71;
+            margin: 10px 0;
+        }
+        .component {
+            background-color: #f0f6ff;
+            padding: 10px 15px;
+            border-radius: 4px;
+            border-left: 3px solid #9b59b6;
+            margin: 10px 0;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        .note {
+            background-color: #fef9e7;
+            border-left: 4px solid #f39c12;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .diagram {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .highlight {
+            background-color: #e8f8f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>HGM Pipeline: Complete Process Flow</h1>
+    
+    <div class="note">
+        This document provides a comprehensive overview of the HGM (Hierarchical Generative Model) pipeline, detailing how data flows from input files through the generative model to the BPP (Bioactivity Prediction Pipeline) and finally to analysis and visualization.
+    </div>
+
+    <div class="diagram">
+        <h3>Overall Process Flow Diagram</h3>
+        <pre>
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│                 │     │                 │     │                 │     │                 │
+│  Input SMILES   │ ──> │ Data Processing │ ──> │  HGM Training   │ ──> │ Molecule        │
+│  Data           │     │ & Augmentation  │     │  & Optimization │     │ Generation      │
+│                 │     │                 │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                                                │
+                                                                                ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│                 │     │                 │     │                 │     │                 │
+│  Visualization  │ <── │  Result         │ <── │  BPP Property   │ <── │  Molecule       │
+│  & UI Display   │     │  Analysis       │     │  Prediction     │     │  Filtering      │
+│                 │     │                 │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
+        </pre>
+    </div>
+
+    <div class="process-container">
+        <h2>1. Input Data Preparation</h2>
+        
+        <div class="process-step">
+            <h4>1.1 SMILES Data Collection</h4>
+            <p>The pipeline begins with raw SMILES (Simplified Molecular Input Line Entry System) data representing the molecular structures.</p>
+            <div class="data-flow">
+                <strong>Input Files:</strong> Plain text files containing one SMILES string per line, typically located in the <code>input_data/</code> directory.
+            </div>
+            <p>Example input file structure:</p>
+            <code>
+                CC(C)CC1=CC=C(C=C1)C(C)C(=O)O<br>
+                CC1=CC=C(C=C1)C1=CC=CC=C1<br>
+                C1=CC=C(C=C1)C1=CC=CC=C1<br>
+                ...
+            </code>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>1.2 Configuration Setting</h4>
+            <p>Before processing begins, the user configures parameters through the Streamlit interface or by directly editing the <code>config.ini</code> file.</p>
+            <div class="component">
+                <strong>Key Configuration Parameters:</strong>
+                <ul>
+                    <li><code>split</code>: Train/validation split ratio (e.g., 0.8)</li>
+                    <li><code>min_len</code>: Minimum SMILES sequence length to include</li>
+                    <li><code>max_len</code>: Maximum SMILES sequence length to include</li>
+                    <li><code>augmentation</code>: Number of augmented variants to generate</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>1.3 SMILES Validation & Filtering</h4>
+            <p>The input SMILES strings are validated and filtered based on configuration parameters:</p>
+            <ol>
+                <li>Each SMILES string is parsed using RDKit to verify its validity</li>
+                <li>Invalid SMILES are removed from the dataset</li>
+                <li>SMILES strings shorter than <code>min_len</code> or longer than <code>max_len</code> are filtered out</li>
+                <li>Duplicate molecules are eliminated based on canonical SMILES representation</li>
+            </ol>
+            <div class="note">
+                This step is implemented in <code>processes/processing.py</code>, which calls RDKit functions to perform chemical validation.
+            </div>
+        </div>
+    </div>
+
+    <div class="process-container">
+        <h2>2. Data Processing & Augmentation</h2>
+        
+        <div class="process-step">
+            <h4>2.1 SMILES Canonicalization</h4>
+            <p>Molecules are converted to their canonical SMILES representation to ensure consistency:</p>
+            <div class="data-flow">
+                <strong>Process:</strong> Each valid SMILES is converted to an RDKit molecule object and then back to canonical SMILES.
+            </div>
+            <div class="component">
+                <strong>Implementation:</strong> The <code>funcs/helpers_data_processing.py</code> module handles this conversion using RDKit's <code>MolToSmiles</code> function with the canonical flag.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>2.2 Data Augmentation</h4>
+            <p>To increase the diversity of training data, multiple valid SMILES representations are generated for each molecule:</p>
+            <ol>
+                <li>The RDKit molecule object is randomized by permuting the atom order</li>
+                <li>For each permutation, a new valid SMILES string is generated</li>
+                <li>This process is repeated <code>augmentation</code> times for each molecule</li>
+            </ol>
+            <div class="data-flow">
+                <strong>Output:</strong> A larger dataset with multiple valid SMILES representations for each unique molecule, stored in <code>memory/{experiment_name}/data_tr.txt</code> and <code>memory/{experiment_name}/data_val.txt</code>.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>2.3 Train/Validation Split</h4>
+            <p>The augmented data is split into training and validation sets:</p>
+            <ol>
+                <li>Molecules are randomly divided based on the <code>split</code> parameter</li>
+                <li>If <code>split = 1.0</code>, all data is used for training with no validation set</li>
+                <li>The split occurs at the molecule level (before augmentation) to prevent data leakage</li>
+            </ol>
+            <div class="note">
+                The indices for train/validation splits are stored in <code>memory/{experiment_name}/idx_tr</code> and <code>memory/{experiment_name}/idx_val</code> for reproducibility.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>2.4 Tokenization & Vocabulary Building</h4>
+            <p>SMILES strings are tokenized for neural network processing:</p>
+            <ol>
+                <li>A vocabulary of tokens is built from all characters in the SMILES strings</li>
+                <li>Special tokens like [START], [END], and [PAD] are added</li>
+                <li>Each SMILES string is converted to a sequence of token indices</li>
+                <li>Sequences are padded to uniform length for batch processing</li>
+            </ol>
+            <div class="component">
+                <strong>Implementation:</strong> Token mappings are defined in <code>configs/fixed_params.py</code> and processing is handled by <code>funcs/helpers_data_processing.py</code>.
+            </div>
+        </div>
+    </div>
+
+    <div class="process-container">
+        <h2>3. HGM Model Training</h2>
+        
+        <div class="process-step">
+            <h4>3.1 Model Architecture Initialization</h4>
+            <p>The Hierarchical Generative Model (HGM) is initialized based on configuration parameters:</p>
+            <div class="component">
+                <strong>Architecture Components:</strong>
+                <ul>
+                    <li>Input embedding layer with vocabulary size + special tokens</li>
+                    <li>LSTM/GRU layers with configurable neuron counts <code>[neuron_layer1, neuron_layer2]</code></li>
+                    <li>Dropout layers with rates defined by <code>[dropout_layer1, dropout_layer2]</code></li>
+                    <li>Dense output layer with softmax activation (vocabulary size)</li>
+                </ul>
+            </div>
+            <div class="note">
+                Model architecture is defined in <code>funcs/helpers_training.py</code> using the <code>SeqModel</code> class.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>3.2 Transfer Learning (Optional)</h4>
+            <p>If a pretrained model is specified, its weights are loaded before training:</p>
+            <ol>
+                <li>Pretrained model weights are loaded from <code>pretrained/{pretrained_model}</code></li>
+                <li>The <code>trainables</code> parameter controls which layers are fine-tuned</li>
+                <li>Transfer learning allows leveraging knowledge from larger datasets</li>
+            </ol>
+            <div class="data-flow">
+                <strong>Implementation:</strong> The <code>processes/training.py</code> module handles loading pretrained weights and configuring layer trainability.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>3.3 Training Loop</h4>
+            <p>The model is trained using the processed data:</p>
+            <ol>
+                <li>Data is loaded in batches of size <code>batch_size</code></li>
+                <li>The model is trained for <code>epochs</code> iterations</li>
+                <li>Training uses teacher forcing with categorical cross-entropy loss</li>
+                <li>Learning rate is reduced on plateau with <code>patience_lr</code> and <code>factor</code> parameters</li>
+                <li>Model checkpoints are saved every <code>period</code> epochs</li>
+            </ol>
+            <div class="component">
+                <strong>Training Process:</strong> Each input sequence has targets shifted by one position (next token prediction).
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>3.4 Model Checkpointing</h4>
+            <p>During training, model weights are saved at regular intervals:</p>
+            <div class="data-flow">
+                <strong>Outputs:</strong> Model checkpoints are stored in <code>memory/{experiment_name}/models/</code> with epoch numbers.
+            </div>
+            <div class="component">
+                <strong>Training History:</strong> Loss curves and metrics are saved to <code>memory/{experiment_name}/models/history</code> for later visualization.
+            </div>
+        </div>
+    </div>
+
+    <div class="process-container">
+        <h2>4. Molecule Generation</h2>
+        
+        <div class="process-step">
+            <h4>4.1 Beam Search Generation</h4>
+            <p>Trained models are used to generate novel molecules using beam search:</p>
+            <ol>
+                <li>Beam search is initialized with the [START] token and width <code>width</code></li>
+                <li>At each step, the model predicts probability distributions for the next token</li>
+                <li>The top-<code>width</code> most promising sequences are kept at each step</li>
+                <li>Sequences that reach the [END] token are stored as complete</li>
+                <li>The process continues until max length or all beams are complete</li>
+            </ol>
+            <div class="component">
+                <strong>Implementation:</strong> Beam search is implemented in <code>processes/beam_search.py</code> with helper functions in <code>funcs/helper_beam_search.py</code>.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>4.2 Sampling-Based Generation</h4>
+            <p>Additional molecules are generated using temperature-controlled sampling:</p>
+            <ol>
+                <li>Starting with the [START] token, tokens are sampled sequentially</li>
+                <li>Each token is sampled from the probability distribution with temperature <code>temp</code></li>
+                <li>Higher temperature increases diversity but may reduce validity</li>
+                <li>The process continues until an [END] token or max length is reached</li>
+                <li>A total of <code>n_sample</code> molecules are generated per epoch</li>
+            </ol>
+            <div class="data-flow">
+                <strong>Output:</strong> Generated SMILES are stored in <code>memory/{experiment_name}/generated_samples/epoch_{epoch}_batch_{batch}</code>.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>4.3 Molecule Filtering & Validation</h4>
+            <p>Generated molecules undergo filtering and validation:</p>
+            <ol>
+                <li>Invalid SMILES strings are removed</li>
+                <li>Duplicate molecules are eliminated</li>
+                <li>Basic molecular property filters are applied (e.g., molecular weight limits)</li>
+                <li>Valid molecules are canonicalized for consistency</li>
+            </ol>
+            <div class="note">
+                Filtering is performed by <code>processes/novo_analysis_org.py</code> using RDKit's validation functions.
+            </div>
+        </div>
+    </div>
+
+    <div class="process-container">
+        <h2>5. BPP Property Prediction</h2>
+        
+        <div class="process-step">
+            <h4>5.1 BPP Model Loading</h4>
+            <p>The Bioactivity Prediction Pipeline (BPP) loads trained ML models:</p>
+            <div class="component">
+                <strong>Available Models:</strong>
+                <ul>
+                    <li><code>ec50_glp1r</code>: EC50 values for GLP-1 receptor</li>
+                    <li><code>ec50_gcgr</code>: EC50 values for glucagon receptor</li>
+                    <li><code>ec50_gip</code>: EC50 values for GIP receptor</li>
+                    <li><code>kd_glp1r</code>: Binding affinity (Kd) for GLP-1 receptor</li>
+                    <li><code>kd_gcgr</code>: Binding affinity (Kd) for glucagon receptor</li>
+                </ul>
+            </div>
+            <div class="note">
+                Models are loaded from <code>bpp/models/</code> along with their feature transformers stored in <code>*_transformer.joblib</code> files.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>5.2 Feature Engineering</h4>
+            <p>Generated molecules are converted to feature vectors for ML prediction:</p>
+            <ol>
+                <li>Morgan fingerprints are calculated for each molecule (ECFP4, radius=2, 2048 bits)</li>
+                <li>Additional descriptors may be calculated based on the model requirements</li>
+                <li>Features are standardized using the saved transformers</li>
+            </ol>
+            <div class="component">
+                <strong>Implementation:</strong> Feature engineering is handled by <code>bpp/feature_engineering.py</code> using classes like <code>MorganFingerprintTransformer</code>.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>5.3 Bioactivity Prediction</h4>
+            <p>The BPP models predict key properties for the generated molecules:</p>
+            <ol>
+                <li>Each model takes the molecular features as input</li>
+                <li>Models predict the target property in log scale for numerical stability</li>
+                <li>Predictions are transformed back to original scale using the target transformers</li>
+                <li>All predictions are combined into a single results dataframe</li>
+            </ol>
+            <div class="data-flow">
+                <strong>Process Flow:</strong> The <code>predict_from_bpp</code> function in <code>bpp/predict.py</code> handles all prediction steps.
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>5.4 Additional Property Calculation</h4>
+            <p>Beyond ML predictions, additional molecular properties are calculated:</p>
+            <div class="component">
+                <strong>Properties Calculated:</strong>
+                <ul>
+                    <li>Molecular weight</li>
+                    <li>LogP (lipophilicity)</li>
+                    <li>Number of hydrogen bond donors/acceptors</li>
+                    <li>Number of rotatable bonds</li>
+                    <li>Topological polar surface area (TPSA)</li>
+                    <li>QED (drug-likeness score)</li>
+                </ul>
+            </div>
+            <div class="note">
+                These calculations are performed using RDKit's descriptor functions in <code>funcs/helpers_analysis.py</code>.
+            </div>
+        </div>
+    </div>
+
+    <div class="process-container">
+        <h2>6. Result Analysis & Visualization</h2>
+        
+        <div class="process-step">
+            <h4>6.1 Results Compilation</h4>
+            <p>Results from BPP and property calculations are compiled into structured datasets:</p>
+            <div class="data-flow">
+                <strong>Output Files:</strong>
+                <ul>
+                    <li><code>memory/{experiment_name}/output/molecules_totalabundance.csv</code>: Main results with all properties</li>
+                    <li><code>memory/{experiment_name}/output/molecules_totalabundance_bpp.csv</code>: Results with BPP predictions</li>
+                    <li><code>memory/{experiment_name}/output/molecules_totalabundance.txt</code>: SMILES strings only</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>6.2 Data Processing for Visualization</h4>
+            <p>Results are processed for effective visualization:</p>
+            <ol>
+                <li>Properties are normalized for comparison</li>
+                <li>Statistical analysis is performed (mean, median, distribution)</li>
+                <li>Results are formatted for Streamlit display components</li>
+            </ol>
+        </div>
+
+        <div class="flow-arrow">↓</div>
+        
+        <div class="process-step">
+            <h4>6.3 Streamlit UI Rendering</h4>
+            <p>The processed results are displayed in the Streamlit interface:</p>
+            <div class="component">
+                <strong>UI Components:</strong>
+                <ul>
+                    <li>Training history plots (loss curves)</li>
+                    <li>Property distribution visualizations</li>
+                    <li>Interactive molecule viewer with RDKit rendering</li>
+                    <li>Tabular data display with filtering options</li>
+                    <li>Download options for results in various formats</li>
+                </ul>
+            </div>
+            <div class="note">
+                UI rendering is implemented in <code>app.py</code> using Streamlit components and custom styling.
+            </div>
+        </div>
+    </div>
+
+    <h2>Data Flow Summary</h2>
+    <p>The complete data flow through the pipeline can be summarized as follows:</p>
+    
+    <table>
+        <tr>
+            <th>Stage</th>
+            <th>Input</th>
+            <th>Process</th>
+            <th>Output</th>
+            <th>Implementation</th>
+        </tr>
+        <tr>
+            <td>Input Preparation</td>
+            <td>Raw SMILES in text files</td>
+            <td>Validation, filtering</td>
+            <td>Validated SMILES dataset</td>
+            <td><code>processes/processing.py</code></td>
+        </tr>
+        <tr>
+            <td>Data Processing</td>
+            <td>Validated SMILES</td>
+            <td>Canonicalization, augmentation, splitting, tokenization</td>
+            <td>Tokenized training data</td>
+            <td><code>funcs/helpers_data_processing.py</code></td>
+        </tr>
+        <tr>
+            <td>Model Training</td>
+            <td>Tokenized data</td>
+            <td>Neural network training</td>
+            <td>Trained model checkpoints</td>
+            <td><code>processes/training.py</code></td>
+        </tr>
+        <tr>
+            <td>Molecule Generation</td>
+            <td>Trained models</td>
+            <td>Beam search, sampling</td>
+            <td>Generated SMILES</td>
+            <td><code>processes/beam_search.py</code>, <code>processes/sampling_org.py</code></td>
+        </tr>
+        <tr>
+            <td>Property Prediction</td>
+            <td>Generated SMILES</td>
+            <td>Feature engineering, ML prediction</td>
+            <td>Molecules with predicted properties</td>
+            <td><code>bpp/predict.py</code></td>
+        </tr>
+        <tr>
+            <td>Result Analysis</td>
+            <td>Molecules with properties</td>
+            <td>Statistical analysis, formatting</td>
+            <td>Processed results for visualization</td>
+            <td><code>processes/novo_analysis_org.py</code></td>
+        </tr>
+        <tr>
+            <td>Visualization</td>
+            <td>Processed results</td>
+            <td>UI rendering</td>
+            <td>Interactive Streamlit interface</td>
+            <td><code>app.py</code></td>
+        </tr>
+    </table>
+
+    <div class="note">
+        <strong>Performance Considerations:</strong>
+        <p>The pipeline implements several optimizations to ensure efficient execution:</p>
+        <ul>
+            <li>Multiprocessing for parallel sampling from multiple model checkpoints</li>
+            <li>GPU acceleration for model training and inference when available</li>
+            <li>Efficient data handling with memory-mapped files for large datasets</li>
+            <li>Caching of molecular fingerprints and descriptors to avoid redundant calculations</li>
+        </ul>
+    </div>
+</body>
+</html>
