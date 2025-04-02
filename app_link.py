@@ -101,7 +101,7 @@ def run_pipeline_in_background(experiment_name):
                         update_status(progress=75, stage="Sample Generation", status_val="completed")
                     elif "Novo analysis completed successfully" in line:
                         update_status(progress=95, stage="Analysis", status_val="completed")
-            
+
             # Check return code
             return_code = process.poll()
             if return_code == 0:
@@ -111,7 +111,7 @@ def run_pipeline_in_background(experiment_name):
                     status_val="completed",
                     log="🚀 Pipeline execution completed successfully!"
                 )
-                
+
                 # Send email notification if configured
                 if "Communication" in config_file and "email" in config_file["Communication"]:
                     email = config_file["Communication"]["email"]

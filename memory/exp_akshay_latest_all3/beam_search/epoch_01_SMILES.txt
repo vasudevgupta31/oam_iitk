@@ -1,0 +1,8 @@
+C(F)(F)(F)c1cc(C(F)(F)F)cc(C(F)(F)F)c1-c1n(-c2ccc(S(N)(=O)=O)cc2)nc(C(F)(F)F)c1
+c1(C(=O)Nc2ccc3c(c2)-c2c(c(C(=O)N)nn2-c2ccc(S(=O)(=O)N)cc2)CC3)cc(F)cc(F)c1
+C(F)(F)(F)c1cc(C(F)(F)F)cc(C(F)(F)F)c1-c1n(-c2ccc(S(N)(=O)=O)cc2)nc(C(=O)N)c1
+C(F)(F)(F)c1cc(C(F)(F)F)cc(C(F)(F)F)c1-c1n(-c2ccc(S(N)(=O)=O)cc2)nc(C(=O)O)c1
+c1(C(=O)Nc2ccc3c(c2)-c2c(c(C(=O)N)nn2-c2ccc(S(=O)(=O)N)cc2)CC3)cc(F)cc(F)c1F
+C(F)(F)(F)c1cc(C(F)(F)F)cc(C(F)(F)F)c1-c1n(-c2ccc(S(N)(=O)=O)cc2)nc(C(F)(F)F)n1
+C(F)(F)(F)c1cc(C(F)(F)F)cc(C(F)(F)F)c1-c1n(-c2ccc(S(N)(=O)=O)cc2)nc(C(F)(F)F)c1F
+C(F)(F)(F)c1cc(C(F)(F)F)cc(C(F)(F)F)c1-c1n(-c2ccc(S(N)(=O)=O)cc2)nc(-c2ccc(Cl)cc2)n1

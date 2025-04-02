@@ -298,7 +298,7 @@ def perform_sampling_batches(batch_size = 100, num_processes=None):
  
     # Determine number of processes to use (adjust based on your system)
     if num_processes is None:
-        num_processes = min(mp.cpu_count(), 8)  # Use up to 8 cores or however many are available
+        num_processes = min(mp.cpu_count(), 4)  # Use up to 8 cores or however many are available
     print(f'Using {num_processes} processes for parallel sampling')
 
     if n_sample > 5000:
@@ -326,6 +326,21 @@ def perform_sampling_batches(batch_size = 100, num_processes=None):
         if n_sample % batch_size != 0:
             num_batches += 1
 
+        # Check which batches already exist and only process missing ones
+        existing_batches = set()
+        for batch_idx in range(1, num_batches + 1):
+            batch_filename = os.path.join(save_path, f"epoch_{epoch}_batch_{batch_idx}")
+            if os.path.exists(batch_filename):
+                existing_batches.add(batch_idx - 1)  # Convert to 0-based index
+                print(f"Skipping existing batch: epoch_{epoch}_batch_{batch_idx}")
+        
+        # Only process batches that don't exist yet
+        batches_to_process = [idx for idx in range(num_batches) if idx not in existing_batches]
+        
+        if not batches_to_process:
+            print(f"All batches for epoch {epoch} already exist, skipping.")
+            continue
+
         # Create a partial function with all the fixed parameters
         process_batch_partial = partial(
             process_batch,
@@ -345,9 +360,8 @@ def perform_sampling_batches(batch_size = 100, num_processes=None):
 
         # Process batches in parallel - no result collection
         with mp.Pool(processes=num_processes) as pool:
-            batch_indices = list(range(num_batches))
-            # Apply the function to all batches and wait for all to complete
-            pool.map(process_batch_partial, batch_indices)
+            # Apply the function only to batches that need processing
+            pool.map(process_batch_partial, batches_to_process)
         print(f'Completed all batches for epoch {epoch}')
 
     end = time.time()

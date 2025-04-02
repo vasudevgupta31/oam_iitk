@@ -1133,7 +1133,7 @@ else:  # Browse Experiments page
                     similarity_metrics = st.multiselect(
                         "Select similarity metrics to display:",
                         options=['avg_similarity', 'median_similarity', 'min_similarity', 'max_similarity', 'std_similarity'],
-                        default=['avg_similarity', 'max_similarity', 'min_similarity'],
+                        default=['avg_similarity', 'std_similarity'],
                         help="Choose which similarity metrics to show on the chart"
                     )
                     
@@ -1142,10 +1142,10 @@ else:  # Browse Experiments page
                     else:
                         # Create a line chart using Plotly
                         import plotly.express as px
-                        
+
                         # Filter out rows with missing values 
                         filtered_df = summary_df.dropna(subset=similarity_metrics)
-                        
+
                         # Create labels mapping for better display
                         metric_labels = {
                             'avg_similarity': 'Average Similarity',
