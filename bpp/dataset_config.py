@@ -18,22 +18,22 @@ datasets_config = {
         "target_col": "EC50 (nM)",
         "model_file": "ec50_glp1r"
     },
-    "dataset4": {
-        "file": "training_data/GIP.csv", 
-        "smiles_col": "Ligand SMILES",
-        "target_col": "Kd (nM)",
-        "model_file": "kd_gip"
-    },
-    "dataset5": {
-        "file": "training_data/GCGR.csv",
-        "smiles_col": "Ligand SMILES",
-        "target_col": "Kd (nM)",
-        "model_file": "kd_gcgr"
-    },
-    "dataset6": {
-        "file": "training_data/GLP-1R.csv",
-        "smiles_col": "Ligand SMILES", 
-        "target_col": "Kd (nM)",
-        "model_file": "kd_glp1r"
-    },
+    # "dataset4": {
+    #     "file": "training_data/GIP.csv", 
+    #     "smiles_col": "Ligand SMILES",
+    #     "target_col": "Kd (nM)",
+    #     "model_file": "kd_gip"
+    # },
+    # "dataset5": {
+    #     "file": "training_data/GCGR.csv",
+    #     "smiles_col": "Ligand SMILES",
+    #     "target_col": "Kd (nM)",
+    #     "model_file": "kd_gcgr"
+    # },
+    # "dataset6": {
+    #     "file": "training_data/GLP-1R.csv",
+    #     "smiles_col": "Ligand SMILES", 
+    #     "target_col": "Kd (nM)",
+    #     "model_file": "kd_glp1r"
+    # },
 }

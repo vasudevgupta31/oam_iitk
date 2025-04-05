@@ -720,7 +720,7 @@ else:  # Browse Experiments page
         # Experiment selection
         selected_experiment = st.selectbox(
             "Select Experiment", 
-            experiment_folders
+            experiment_folders, index=2
         )
 
         if selected_experiment:
@@ -872,15 +872,15 @@ else:  # Browse Experiments page
                     with config_tabs[i]:
                         if section == "Data Samples":
                             
-                            # Create tabs for training and validation data
-                            data_tab1, data_tab2 = st.tabs(["Training Data", "Validation Data"])
+                            # # Create tabs for training and validation data
+                            # data_tab1, data_tab2 = st.tabs(["Training Data", "Validation Data"])
                             
-                            with data_tab1:
-                                show_data_content(selected_experiment, "data_tr.txt")
+                            # with data_tab1:
+                            show_data_content(selected_experiment, "data_tr.txt")
                             
-                            with data_tab2:
-                                show_data_content(selected_experiment, "data_val.txt")
-                        
+                            # with data_tab2:
+                            #     show_data_content(selected_experiment, "data_val.txt")
+
                         elif isinstance(metadata.get(section), dict):
                             # Create a grid layout for placards
                             param_cols = st.columns(3)
@@ -920,7 +920,7 @@ else:  # Browse Experiments page
                     
                     # Create a Plotly figure
                     import plotly.express as px
-                    
+
                     fig = px.line(
                         history_df, 
                         x='epoch', 
@@ -962,12 +962,133 @@ else:  # Browse Experiments page
             with molecule_tabs[0]:
                 # Sample results (if available)
                 results = load_sample_results(selected_experiment)
+                results.index = [i + 1 for i in results.index]
                 if results is not None:
                     # Display summary statistics
-                    st.markdown("#### Summary Statistics")
+                    st.markdown("#### Generated Molecules & Statistics")
                     
+                    import plotly.graph_objects as go
                     # Show sample data
-                    st.dataframe(results)
+                    st.dataframe(results)                    
+                    
+                    with st.container(border=True):
+    
+                        st.markdown("#### Molecule Statistics Chart")
+                        # Column selection for x and y axes
+                        columns = [col for col in results.columns if col not in ["SMILES"]]
+
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            x_axis = st.selectbox("X-axis", options=columns, index=columns.index("tanimoto_similarity_semaglutide") if "tanimoto_similarity_semaglutide" in columns else 0)
+
+                        with col2:
+                            y_axis = st.selectbox("Y-axis", options=columns, index=columns.index("ec50_glp1r") if "ec50_glp1r" in columns else 0)
+
+                        # Filter options
+                        use_log_scale = st.checkbox("Use Log Scale", value=False)
+
+                        col1, col2 = st.columns(2)
+                        with col1.container(border=True):
+                        # Optional: Add range sliders for filtering
+                            if x_axis in results.columns:
+                                x_min, x_max = float(results[x_axis].min()), float(results[x_axis].max())
+                                x_range = st.slider(f"Filter {x_axis} range", x_min, x_max, (x_min, x_max))
+
+                        with col2.container(border=True):
+                            if y_axis in results.columns:
+                                y_min, y_max = float(results[y_axis].min()), float(results[y_axis].max())
+                                y_range = st.slider(f"Filter {y_axis} range", y_min, y_max, (y_min, y_max))
+
+                        # Filter data based on selections
+                        filtered_df = results.copy()
+                        if x_axis in results.columns:
+                            filtered_df = filtered_df[(filtered_df[x_axis] >= x_range[0]) & (filtered_df[x_axis] <= x_range[1])]
+                        if y_axis in results.columns:
+                            filtered_df = filtered_df[(filtered_df[y_axis] >= y_range[0]) & (filtered_df[y_axis] <= y_range[1])]
+
+                        # Ensure we have the actual SMILES and index preserved correctly
+                        # Make a copy to ensure we keep our molecule numbering
+                        filtered_df = filtered_df.reset_index(names=["Molecule_Number"])
+
+                        with st.container(border=True):
+                            # # Create color scale options
+                            col1, col2, col3 = st.columns(3)
+                            
+                            # Select which column to use for coloring
+                            color_by = col1.selectbox("Color By", 
+                                                    options=columns,
+                                                    index=columns.index(x_axis))
+                            
+                            # Select color scale
+                            color_scale = col2.selectbox("Color Scale", 
+                                                    options=["Viridis", "Plasma", "Inferno", "Magma", "Cividis", 
+                                                                "Turbo", "Blues", "Reds", "Greens", "YlOrRd"],
+                                                    index=6)
+                            
+                            # Option to reverse color scale
+                            reverse_scale = col3.selectbox("Reverse Color Scale", options=[True, False], index=1)
+                                                
+                        # Use the directly selected column for coloring
+                        color_column = color_by
+
+                        # Create the scatter plot - DO NOT USE hover_data here
+                        if use_log_scale:
+                            fig = px.scatter(
+                                filtered_df,
+                                x=x_axis,
+                                y=y_axis,
+                                color=color_column,
+                                color_continuous_scale=color_scale.lower() if not reverse_scale else color_scale.lower() + "_r",
+                                log_x=True,
+                                log_y=True,
+                                title=f"{y_axis} vs {x_axis}",
+                                labels={x_axis: f"{x_axis} (log scale)", y_axis: f"{y_axis} (log scale)"}
+                            )
+                        else:
+                            fig = px.scatter(
+                                filtered_df,
+                                x=x_axis,
+                                y=y_axis,
+                                color=color_column,
+                                color_continuous_scale=color_scale.lower() if not reverse_scale else color_scale.lower() + "_r",
+                                title=f"{y_axis} vs {x_axis}"
+                            )
+
+                        # Create custom_data array with columns for the tooltip
+                        custom_data = filtered_df[["Molecule_Number", "SMILES"]].copy()
+                        # Add other columns if needed but not the ones already on axes
+                        for col in filtered_df.columns:
+                            if col != x_axis and col != y_axis and col != color_column and col not in custom_data.columns:
+                                custom_data[col] = filtered_df[col]
+
+                        # Set custom data to include molecule number and SMILES
+                        fig.update_traces(
+                            customdata=custom_data.values,
+                            hovertemplate=(
+                                f"<b>Molecule #</b>: %{{customdata[0]}}<br>" +
+                                f"<b>SMILES</b>: %{{customdata[1]}}<br>" +
+                                f"<b>{x_axis}</b>: %{{x:.4f}}<br>" +
+                                f"<b>{y_axis}</b>: %{{y:.4f}}<br>" +
+                                f"<b>{color_column}</b>: %{{marker.color:.4f}}<br>" +
+                                "<extra></extra>"  # This removes the secondary box
+                            )
+                        )
+
+                        # Update layout
+                        fig.update_layout(
+                            xaxis_title=f"{x_axis}" + (" (log scale)" if use_log_scale else ""),
+                            yaxis_title=f"{y_axis}" + (" (log scale)" if use_log_scale else ""),
+                            plot_bgcolor='white',
+                            hovermode='closest',
+                            showlegend=False,  # Hide the legend
+                            coloraxis_colorbar=dict(
+                                title=color_column
+                            )
+                        )
+
+                        # Display the plot
+                        st.plotly_chart(fig, use_container_width=True)
                     
                     # Download button for full results
                     results_path = os.path.join("output", selected_experiment, "results", "metrics.csv")

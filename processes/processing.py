@@ -29,7 +29,7 @@ def preprocessing(split,
     logger.info(f"Loaded {len(data_ori)} original data samples.")
 
     if verbose: logger.info("Start data processing")
-    
+
     # Define index for the tr-val split and shuffle them
     all_idx = np.arange(len(data_ori))
     idx_split = int(split * len(all_idx))

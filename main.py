@@ -57,7 +57,7 @@ def main():
     # shutil.copy("config.ini", exp_memory_path)
     # init_time = datetime.datetime.now()
 
-    # # 1. Data Processing
+    # 1. Data Processing
     # logger.info("==================> Starting data processing...")
 
     # start_time = datetime.datetime.now()
@@ -89,26 +89,26 @@ def main():
     # logger.info(f"Beam search completed successfully in {beam_search_time}")
     # logger.info("======================================================")
 
-    # # 4. Sampling
-    logger.info("==================> Generating samples from trained network.")   
-    start_time = datetime.datetime.now()
-    perform_sampling_batches(batch_size=250, num_processes=2)  # Batch multi processing is done at samples_level within an epoch so 1000 samples can be done parallely with 4 num processes at once with a btach size of 250
-    sampling_time = datetime.datetime.now() - start_time
-    logger.info(f"Sample generation completed in {sampling_time}.")
-    logger.info("======================================================")
+    # # # 4. Sampling
+    # logger.info("==================> Generating samples from trained network.")   
+    # start_time = datetime.datetime.now()
+    # perform_sampling_batches(batch_size=250, num_processes=2)  # Batch multi processing is done at samples_level within an epoch so 1000 samples can be done parallely with 4 num processes at once with a btach size of 250
+    # sampling_time = datetime.datetime.now() - start_time
+    # logger.info(f"Sample generation completed in {sampling_time}.")
+    # logger.info("======================================================")
 
-    # 5. Analysis
-    logger.info("==================> Performing Novo analysis on generated samples.")
-    start_time = datetime.datetime.now()
-    perform_novo_analysis()
-    analysis_time = datetime.datetime.now() - start_time
-    logger.info(f"Novo analysis completed successfully in {analysis_time}.")
-    logger.info("======================================================")
+    # # 5. Analysis
+    # logger.info("==================> Performing Novo analysis on generated samples.")
+    # start_time = datetime.datetime.now()
+    # perform_novo_analysis()
+    # analysis_time = datetime.datetime.now() - start_time
+    # logger.info(f"Novo analysis completed successfully in {analysis_time}.")
+    # logger.info("======================================================")
 
-    # 5.1 TSNE
-    make_tsne()
+    # # 5.1 TSNE
+    # make_tsne()
 
-    # 6. Predict from bpp_models for novo analysis results
+    # # 6. Predict from bpp_models for novo analysis results
     logger.info("==================> Running BPP predictions on generated molecules.")
     start_time = datetime.datetime.now()
     novo_analysis_results = pd.read_csv(os.path.join(exp_output_path, 'molecules_totalabundance.csv'))
@@ -119,10 +119,10 @@ def main():
     logger.info(f"BPP predictions for generated molecules completed in {datetime.datetime.now() - start_time}.")
     logger.info("======================================================")
 
-    # Log Total Execution Time
-    total_execution_time = datetime.datetime.now() - init_time
-    logger.info(f"🚀 Pipeline execution completed in {total_execution_time}.")
-    logger.info("======================================================")
+    # # Log Total Execution Time
+    # total_execution_time = datetime.datetime.now() - init_time
+    # logger.info(f"🚀 Pipeline execution completed in {total_execution_time}.")
+    # logger.info("======================================================")
 
 
 if __name__ == '__main__':

@@ -5,6 +5,8 @@ from joblib import load
 import glob
 import sys
 from typing import List, Optional
+from rdkit import Chem
+from rdkit import DataStructs
 
 # Disable RDKit warnings and logging
 import warnings
@@ -81,15 +83,17 @@ def predict_from_bpp(
     """
     # Verify the smiles column exists
     if smiles_col not in df.columns:
-        raise ValueError(f"SMILES column '{smiles_col}' not found in DataFrame")
-
+        raise ValueError(f"SMILES colfrom rdkit import Chem'{smiles_col}' not found in DataFrame")
+    
     # Make a copy of the DataFrame to avoid modifying the original
     result_df = df.copy()
 
     # Find all .joblib files that don't end with _transformer.joblib
-    model_files = [os.path.basename(f).replace('.joblib', '') 
-                    for f in glob.glob(f"{models_dir}/*.joblib") 
-                    if not f.endswith('_transformer.joblib')]
+    model_files  = [os.path.basename(f).replace('.joblib', '') 
+                for f in glob.glob(f"{models_dir}/*.joblib") 
+                if not f.endswith('_transformer.joblib') and  
+                not os.path.basename(f).startswith('kd_')]
+                
     model_names = model_files
 
     if not model_names:
@@ -135,6 +139,25 @@ def predict_from_bpp(
             # Transform predictions back to original scale
             predictions = target_transformer.inverse_transform(predictions_log)
             
+            # ADD TANIMOTO SIMILARITY
+            base_smiles = 'CC[C@H](C)[C@@H](C(=O)N[C@@H](C)C(=O)N[C@@H](CC1=CNC2=CC=CC=C21)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H](C(C)C)C(=O)N[C@@H](CCCNC(=N)N)C(=O)NCC(=O)N[C@@H](CCCNC(=N)N)C(=O)NCC(=O)O)NC(=O)[C@H](CC3=CC=CC=C3)NC(=O)[C@H](CCC(=O)O)NC(=O)[C@H](CCCCNC(=O)COCCOCCNC(=O)COCCOCCNC(=O)CC[C@H](C(=O)O)NC(=O)CCCCCCCCCCCCCCCCC(=O)O)NC(=O)[C@H](C)NC(=O)[C@H](C)NC(=O)[C@H](CCC(=O)N)NC(=O)CNC(=O)[C@H](CCC(=O)O)NC(=O)[C@H](CC(C)C)NC(=O)[C@H](CC4=CC=C(C=C4)O)NC(=O)[C@H](CO)NC(=O)[C@H](CO)NC(=O)[C@H](C(C)C)NC(=O)[C@H](CC(=O)O)NC(=O)[C@H](CO)NC(=O)[C@H]([C@@H](C)O)NC(=O)[C@H](CC5=CC=CC=C5)NC(=O)[C@H]([C@@H](C)O)NC(=O)CNC(=O)[C@H](CCC(=O)O)NC(=O)C(C)(C)NC(=O)[C@H](CC6=CN=CN6)N'
+
+            # Convert SMILES to molecule object
+            base_mol = Chem.MolFromSmiles(base_smiles)
+
+            if base_mol is None:
+                print("Error: Could not parse base molecule SMILES")
+            else:
+                # Generate fingerprint from molecule object
+                base_fp = Chem.RDKFingerprint(base_mol)
+
+                # Calculate similarities
+                result_df['tanimoto_similarity_semaglutide'] = result_df[smiles_col].apply(
+                    lambda x: DataStructs.TanimotoSimilarity(
+                        Chem.RDKFingerprint(Chem.MolFromSmiles(x)), base_fp
+                    ) if Chem.MolFromSmiles(x) else 0
+                )
+
             # Add predictions to result DataFrame
             result_df[model_name] = predictions
             successful_models.append(model_name)
