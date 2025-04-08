@@ -1019,7 +1019,7 @@ else:  # Browse Experiments page
                             color_by = col1.selectbox("Color By", 
                                                     options=columns,
                                                     index=columns.index(x_axis))
-                            
+
                             # Select color scale
                             color_scale = col2.selectbox("Color Scale", 
                                                     options=["Viridis", "Plasma", "Inferno", "Magma", "Cividis", 
