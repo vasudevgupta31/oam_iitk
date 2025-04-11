@@ -1,9 +1,9 @@
-# **HGM - Hierarchical Generative Model**
+# **HGM - Hit Generative Model**
 
 ![IIT Kanpur Logo](resources/iitklogo.png)
 
 ## **Overview**
-HGM is a Hierarchical Generative Model designed for molecular generation and optimization using SMILES sequences. This project integrates deep learning techniques for data processing, training, beam search, and sampling, enabling efficient molecular design for drug discovery and materials science applications.
+HGM is a drug target Hit Generative Model designed for molecular generation and optimization using SMILES sequences. This project integrates deep learning techniques for data processing, training, beam search, and sampling, enabling efficient molecular design for drug discovery and materials science applications.
 
 The repository includes both a command-line pipeline and a user-friendly Streamlit application for model configuration, training, and visualization.
 
